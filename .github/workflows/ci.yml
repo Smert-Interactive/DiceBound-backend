@@ -1,0 +1,64 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: backend-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Detect Node.js project
+        id: project
+        shell: bash
+        run: |
+          if [[ -f package.json && -f package-lock.json ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          elif [[ ! -f package.json && ! -f package-lock.json ]]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Backend is not scaffolded yet; Node.js checks were skipped."
+          else
+            echo "::error::Commit package.json and package-lock.json together."
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        if: steps.project.outputs.ready == 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.project.outputs.ready == 'true'
+        run: npm ci
+
+      - name: Lint
+        if: steps.project.outputs.ready == 'true'
+        run: npm run lint
+
+      - name: Test
+        if: steps.project.outputs.ready == 'true'
+        run: npm test -- --runInBand
+
+      - name: Build
+        if: steps.project.outputs.ready == 'true'
+        run: npm run build
