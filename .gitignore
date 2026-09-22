@@ -22,3 +22,10 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+
+# Test artifacts
+/coverage
+
+# Local environment overrides
+.env.local
+.env.*.local
