@@ -57,7 +57,7 @@ jobs:
 
       - name: Test
         if: steps.project.outputs.ready == 'true'
-        run: npm test -- --runInBand
+        run: npm test
 
       - name: Build
         if: steps.project.outputs.ready == 'true'
