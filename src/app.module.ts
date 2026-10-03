@@ -5,6 +5,8 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { envSchema } from './config/env.schema.js';
 
+import { HealthModule } from './modules/health/health.module.js';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -13,6 +15,7 @@ import { envSchema } from './config/env.schema.js';
       envFilePath: '.env',
       validationSchema: envSchema,
     }),
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

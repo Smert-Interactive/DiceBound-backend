@@ -27,6 +27,21 @@ src/modules/
 └── sharing/
 ```
 
+### Health check
+
+Проверить, работает ли приложение backend:
+
+```bash
+curl http://localhost:3000/health
+```
+
+Ожидаемый ответ:
+```json
+{
+  "status": "ok"
+}
+```
+
 ## Документация
 
 Дополнительные соглашения backend:
