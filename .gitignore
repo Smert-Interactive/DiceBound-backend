@@ -30,3 +30,6 @@ lerna-debug.log*
 # Local environment overrides
 .env.local
 .env.*.local
+
+# Prisma generated
+/src/generated/prisma/

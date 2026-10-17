@@ -51,6 +51,10 @@ jobs:
         if: steps.project.outputs.ready == 'true'
         run: npm ci
 
+      - name: Generate Prisma Client
+        if: steps.project.outputs.ready == 'true'
+        run: npm run db:generate
+
       - name: Lint
         if: steps.project.outputs.ready == 'true'
         run: npm run lint
@@ -58,6 +62,10 @@ jobs:
       - name: Test
         if: steps.project.outputs.ready == 'true'
         run: npm test
+
+      - name: Test e2e
+        if: steps.project.outputs.ready == 'true'
+        run: npm run test:e2e
 
       - name: Build
         if: steps.project.outputs.ready == 'true'
