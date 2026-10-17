@@ -1,18 +1,39 @@
-import { Test, TestingModule } from '@nestjs/testing';
+
 import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module.js';
+import type { App } from 'supertest/types';
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  it,
+  vi,
+} from 'vitest';
+
+import { AppModule } from '../src/app.module.js';
+import { PrismaService } from '../src/database/prisma.service.js';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+  const prismaMock = {
+    $connect: vi.fn(),
+    $disconnect: vi.fn(),
+    $queryRaw: vi.fn(),
+  };
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule =
+      await Test.createTestingModule({
+        imports: [AppModule],
+      })
+        .overrideProvider(PrismaService)
+        .useValue(prismaMock)
+        .compile();
 
     app = moduleFixture.createNestApplication();
+
     await app.init();
   });
 
@@ -23,7 +44,14 @@ describe('AppController (e2e)', () => {
       .expect('Hello World!');
   });
 
-  afterEach(async () => {
+  it('/health (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/health')
+      .expect(200)
+      .expect({ status: 'ok' });
+  });
+
+  afterAll(async () => {
     await app.close();
   });
 });
