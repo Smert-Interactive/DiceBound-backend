@@ -15,6 +15,7 @@ import { PrismaModule } from './database/prisma.module.js';
       cache: true,
       envFilePath: '.env',
       validationSchema: envSchema,
+      ignoreEnvFile: process.env.NODE_ENV === 'test',
     }),
     PrismaModule,
     HealthModule,
