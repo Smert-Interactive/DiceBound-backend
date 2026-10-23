@@ -19,9 +19,9 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "test:seed": "node --test test/database/seed-contract.test.mjs",
     "test:db": "node --env-file-if-exists=.env --test test/database/model.test.mjs",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate:dev": "prisma migrate dev",
@@ -49,11 +49,12 @@
     "@nestjs/mau": "^0.2.6",
     "@nestjs/schematics": "^12.0.0",
     "@nestjs/testing": "^12.0.1",
+    "@swc/core": "^1.16.20",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.0.0",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/coverage-v8": "^4.1.12",
     "oxlint": "^1.58.0",
     "oxlint-tsgolint": "^7.0.2001",
     "prettier": "^3.4.2",
@@ -61,7 +62,8 @@
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "typescript": "^6.0.2",
+    "unplugin-swc": "^2.0.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.12"
   }
 }
