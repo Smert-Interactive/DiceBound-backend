@@ -64,3 +64,18 @@ export const envSchema = z.object({
     .max(65535),
 });
 ```
+
+## Подключение PostgreSQL
+
+`DATABASE_URL` обязателен для запуска приложения, миграций и seed:
+
+```dotenv
+DATABASE_URL="postgresql://dicebound:change_me@localhost:5432/dicebound"
+```
+
+CLI Prisma читает его через `prisma.config.ts`, приложение — через
+ConfigService, seed — из того же окружения. `.env` загружается автоматически.
+Проверка Prisma-схемы, генерация клиента и `test:seed` не требуют подключения
+к PostgreSQL.
+Старые PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD не заменяют DATABASE_URL.
+[Миграции, seed и переход существующей БД](database.md).
