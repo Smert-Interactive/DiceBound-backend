@@ -1,0 +1,348 @@
+[
+  {
+    "id": "10000000-0000-4000-8000-000000000001",
+    "code": "dnd-5e-mvp",
+    "name": "D&D 5e (simplified)",
+    "description": "Simplified DiceBound MVP sheet; not a complete rules implementation.",
+    "sheet": {
+      "id": "20000000-0000-4000-8000-000000000001",
+      "name": "D&D 5e MVP v1",
+      "schema": {
+        "sections": [
+          {
+            "id": "basic",
+            "label": "Basic",
+            "fields": [
+              {
+                "id": "name",
+                "type": "text",
+                "label": "Name",
+                "required": true,
+                "maxLength": 100
+              },
+              {
+                "id": "level",
+                "type": "number",
+                "label": "Level",
+                "required": true,
+                "min": 1,
+                "max": 20
+              },
+              {
+                "id": "class",
+                "type": "select",
+                "label": "Class",
+                "required": true,
+                "options": [
+                  {
+                    "value": "fighter",
+                    "label": "Fighter"
+                  },
+                  {
+                    "value": "wizard",
+                    "label": "Wizard"
+                  },
+                  {
+                    "value": "rogue",
+                    "label": "Rogue"
+                  },
+                  {
+                    "value": "cleric",
+                    "label": "Cleric"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "abilities",
+            "label": "Abilities",
+            "fields": [
+              {
+                "id": "strength",
+                "type": "number",
+                "label": "Strength",
+                "required": true,
+                "min": 1,
+                "max": 30
+              },
+              {
+                "id": "strength_modifier",
+                "type": "calculated",
+                "label": "Strength modifier",
+                "formula": "floor((strength - 10) / 2)"
+              },
+              {
+                "id": "dexterity",
+                "type": "number",
+                "label": "Dexterity",
+                "required": true,
+                "min": 1,
+                "max": 30
+              },
+              {
+                "id": "dexterity_modifier",
+                "type": "calculated",
+                "label": "Dexterity modifier",
+                "formula": "floor((dexterity - 10) / 2)"
+              },
+              {
+                "id": "constitution",
+                "type": "number",
+                "label": "Constitution",
+                "required": true,
+                "min": 1,
+                "max": 30
+              },
+              {
+                "id": "constitution_modifier",
+                "type": "calculated",
+                "label": "Constitution modifier",
+                "formula": "floor((constitution - 10) / 2)"
+              },
+              {
+                "id": "intelligence",
+                "type": "number",
+                "label": "Intelligence",
+                "required": true,
+                "min": 1,
+                "max": 30
+              },
+              {
+                "id": "intelligence_modifier",
+                "type": "calculated",
+                "label": "Intelligence modifier",
+                "formula": "floor((intelligence - 10) / 2)"
+              },
+              {
+                "id": "wisdom",
+                "type": "number",
+                "label": "Wisdom",
+                "required": true,
+                "min": 1,
+                "max": 30
+              },
+              {
+                "id": "wisdom_modifier",
+                "type": "calculated",
+                "label": "Wisdom modifier",
+                "formula": "floor((wisdom - 10) / 2)"
+              },
+              {
+                "id": "charisma",
+                "type": "number",
+                "label": "Charisma",
+                "required": true,
+                "min": 1,
+                "max": 30
+              },
+              {
+                "id": "charisma_modifier",
+                "type": "calculated",
+                "label": "Charisma modifier",
+                "formula": "floor((charisma - 10) / 2)"
+              }
+            ]
+          },
+          {
+            "id": "combat",
+            "label": "Combat",
+            "fields": [
+              {
+                "id": "hit_points",
+                "type": "resource",
+                "label": "Hit Points",
+                "required": true,
+                "min": 0
+              },
+              {
+                "id": "armor_class",
+                "type": "number",
+                "label": "Armor Class",
+                "required": true,
+                "min": 0
+              },
+              {
+                "id": "inspiration",
+                "type": "checkbox",
+                "label": "Inspiration"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "10000000-0000-4000-8000-000000000002",
+    "code": "call-of-cthulhu-mvp",
+    "name": "Call of Cthulhu (simplified)",
+    "description": "Simplified DiceBound MVP sheet; not a complete rules implementation.",
+    "sheet": {
+      "id": "20000000-0000-4000-8000-000000000002",
+      "name": "Call of Cthulhu MVP v1",
+      "schema": {
+        "sections": [
+          {
+            "id": "identity",
+            "label": "Investigator",
+            "fields": [
+              {
+                "id": "name",
+                "type": "text",
+                "label": "Name",
+                "required": true,
+                "maxLength": 100
+              },
+              {
+                "id": "occupation",
+                "type": "text",
+                "label": "Occupation",
+                "maxLength": 100
+              },
+              {
+                "id": "age",
+                "type": "number",
+                "label": "Age",
+                "required": true,
+                "min": 1
+              }
+            ]
+          },
+          {
+            "id": "characteristics",
+            "label": "Characteristics",
+            "fields": [
+              {
+                "id": "strength",
+                "type": "number",
+                "label": "Strength",
+                "required": true,
+                "min": 1,
+                "max": 99
+              },
+              {
+                "id": "constitution",
+                "type": "number",
+                "label": "Constitution",
+                "required": true,
+                "min": 1,
+                "max": 99
+              },
+              {
+                "id": "dexterity",
+                "type": "number",
+                "label": "Dexterity",
+                "required": true,
+                "min": 1,
+                "max": 99
+              },
+              {
+                "id": "intelligence",
+                "type": "number",
+                "label": "Intelligence",
+                "required": true,
+                "min": 1,
+                "max": 99
+              },
+              {
+                "id": "power",
+                "type": "number",
+                "label": "Power",
+                "required": true,
+                "min": 1,
+                "max": 99
+              },
+              {
+                "id": "appearance",
+                "type": "number",
+                "label": "Appearance",
+                "required": true,
+                "min": 1,
+                "max": 99
+              },
+              {
+                "id": "education",
+                "type": "number",
+                "label": "Education",
+                "required": true,
+                "min": 1,
+                "max": 99
+              },
+              {
+                "id": "size",
+                "type": "number",
+                "label": "Size",
+                "required": true,
+                "min": 1,
+                "max": 99
+              }
+            ]
+          },
+          {
+            "id": "resources",
+            "label": "Resources",
+            "fields": [
+              {
+                "id": "hit_points",
+                "type": "resource",
+                "label": "Hit Points",
+                "required": true,
+                "min": 0
+              },
+              {
+                "id": "sanity",
+                "type": "resource",
+                "label": "Sanity",
+                "required": true,
+                "min": 0
+              },
+              {
+                "id": "luck",
+                "type": "resource",
+                "label": "Luck",
+                "required": true,
+                "min": 0
+              },
+              {
+                "id": "unconscious",
+                "type": "checkbox",
+                "label": "Unconscious"
+              }
+            ]
+          },
+          {
+            "id": "skills",
+            "label": "Skills",
+            "fields": [
+              {
+                "id": "spot_hidden",
+                "type": "number",
+                "label": "Spot Hidden",
+                "required": true,
+                "min": 1,
+                "max": 99
+              },
+              {
+                "id": "library_use",
+                "type": "number",
+                "label": "Library Use",
+                "required": true,
+                "min": 1,
+                "max": 99
+              },
+              {
+                "id": "listen",
+                "type": "number",
+                "label": "Listen",
+                "required": true,
+                "min": 1,
+                "max": 99
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+]

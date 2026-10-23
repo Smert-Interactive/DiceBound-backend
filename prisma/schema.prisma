@@ -8,3 +8,115 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// Triggers, CHECK constraints and the normalized email index live in migration.sql.
+// updatedAt is maintained by PostgreSQL, not Prisma's @updatedAt.
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username     String
+  email        String
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  gameSystems    GameSystem[]
+  characters     Character[]      @relation("CharacterOwner")
+  sourcedCopies  Character[]      @relation("CopySourceOwner")
+  receivedShares CharacterShare[]
+
+  @@map("users")
+}
+
+model GameSystem {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId     String?   @map("owner_id") @db.Uuid
+  source      String
+  builtinCode String?   @unique @map("builtin_code")
+  name        String
+  description String?
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  owner      User?         @relation(fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  schemas    SheetSchema[]
+  characters Character[]
+
+  @@index([ownerId], map: "game_systems_owner_idx")
+  @@map("game_systems")
+}
+
+model SheetSchema {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gameSystemId String   @map("game_system_id") @db.Uuid
+  name         String
+  schema       Json     @db.JsonB
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  gameSystem GameSystem  @relation(fields: [gameSystemId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  characters Character[]
+
+  @@unique([id, gameSystemId])
+  @@index([gameSystemId], map: "sheet_schemas_system_idx")
+  @@map("sheet_schemas")
+}
+
+model Character {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId             String    @map("owner_id") @db.Uuid
+  gameSystemId        String    @map("game_system_id") @db.Uuid
+  sheetSchemaId       String    @map("sheet_schema_id") @db.Uuid
+  name                String
+  data                Json      @default("{}") @db.JsonB
+  sourceCharacterId   String?   @map("source_character_id") @db.Uuid
+  sourceOwnerId       String?   @map("source_owner_id") @db.Uuid
+  sourceOwnerUsername String?   @map("source_owner_username")
+  copiedAt            DateTime? @map("copied_at") @db.Timestamptz(6)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  owner           User               @relation("CharacterOwner", fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  gameSystem      GameSystem         @relation(fields: [gameSystemId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  sheetSchema     SheetSchema        @relation(fields: [sheetSchemaId, gameSystemId], references: [id, gameSystemId], onDelete: Restrict, onUpdate: NoAction)
+  sourceCharacter Character?         @relation("CharacterCopies", fields: [sourceCharacterId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  copies          Character[]        @relation("CharacterCopies")
+  sourceOwner     User?              @relation("CopySourceOwner", fields: [sourceOwnerId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  versions        CharacterVersion[]
+  shares          CharacterShare[]
+
+  @@index([ownerId], map: "characters_owner_idx")
+  @@index([gameSystemId], map: "characters_system_idx")
+  @@index([sheetSchemaId, gameSystemId], map: "characters_schema_idx")
+  @@index([sourceCharacterId], map: "characters_source_idx")
+  @@index([sourceOwnerId], map: "characters_source_owner_idx")
+  @@map("characters")
+}
+
+model CharacterVersion {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  characterId   String   @map("character_id") @db.Uuid
+  versionNumber Int      @map("version_number")
+  data          Json     @db.JsonB
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([characterId, versionNumber])
+  @@map("character_versions")
+}
+
+model CharacterShare {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  characterId    String   @map("character_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  permission     String
+  historyVisible Boolean  @default(false) @map("history_visible")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([characterId, userId])
+  @@index([userId], map: "character_shares_user_idx")
+  @@map("character_shares")
+}

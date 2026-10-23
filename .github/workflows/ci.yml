@@ -55,6 +55,14 @@ jobs:
         if: steps.project.outputs.ready == 'true'
         run: npm run db:generate
 
+      - name: Validate Prisma schema
+        if: steps.project.outputs.ready == 'true'
+        run: npm run db:validate
+
+      - name: Validate built-in seed contract
+        if: steps.project.outputs.ready == 'true'
+        run: npm run test:seed
+
       - name: Lint
         if: steps.project.outputs.ready == 'true'
         run: npm run lint

@@ -15,8 +15,10 @@ src/
 └── main.ts          # Точка входа
 
 prisma/
-├── schema.prisma    # Схема базы данных
-└── migrations/      # Миграции PostgreSQL
+├── schema.prisma    # Модели Prisma Client
+├── migrations/      # SQL-миграции Prisma Migrate
+├── seed.mjs         # Запуск seed через Prisma CLI
+└── seeds/           # Две встроенные системы и схемы листов
 ```
 
 Бизнес-логика размещается в `src/modules/`. Работа с PostgreSQL осуществляется через Prisma ORM. Конфигурация приложения загружается из environment variables и валидируется через Zod.
@@ -27,7 +29,7 @@ prisma/
 
 - Node.js 24
 - npm
-- PostgreSQL (не обязательно)
+- Доступная PostgreSQL (для запуска backend)
 
 ### 1. Установка зависимостей
 
@@ -49,7 +51,8 @@ PORT=3000
 DATABASE_URL="postgresql://dicebound:change_me@localhost:5432/dicebound"
 ```
 
-База данных и пользователь PostgreSQL должны быть созданы заранее. Значения в примере необходимо заменить локальными.
+База данных и пользователь PostgreSQL должны быть предоставлены заранее. Значения в примере необходимо заменить своими.
+Для CLI, seed и приложения используется один `DATABASE_URL`.
 
 ### 3. Подготовка Prisma
 
@@ -57,13 +60,17 @@ DATABASE_URL="postgresql://dicebound:change_me@localhost:5432/dicebound"
 npm run db:generate
 ```
 
-Для применения существующих миграций:
+Для применения миграций к БД без таблиц DiceBound:
 
 ```bash
 npm run db:migrate:deploy
+npm run db:seed
 ```
 
-До появления первых миграций этот шаг можно пропустить.
+**Если таблицы уже созданы старым SQL-runner, сначала выполните сверку и baseline
+по [инструкции перехода](docs/database.md#переход-существующей-серверной-бд-baseline).**
+Повторно создавать таблицы или сбрасывать серверную БД не нужно.
+Seed и генерация Prisma Client в Prisma 7 запускаются явно.
 
 ### 4. Запуск backend
 
@@ -101,9 +108,15 @@ Endpoint проверяет работоспособность API. Подклю
 | `npm run test:e2e` | E2E-тесты |
 | `npm run db:generate` | Генерация Prisma Client |
 | `npm run db:migrate:dev` | Создание и применение миграций |
+| `npm run db:migrate:deploy` | Применение готовых миграций |
+| `npm run db:migrate:status` | Состояние истории миграций |
+| `npm run db:seed` | Встроенные системы и схемы листов |
+| `npm run test:seed` | Проверка seed без БД |
+| `npm run test:db` | Интеграционные проверки во временных схемах существующей БД |
 | `npm run db:studio` | Интерфейс Prisma Studio |
 
 ## Документация
 
+- [База данных, миграции, seed и переход существующей БД](docs/database.md)
 - [Конфигурация приложения](docs/configuration.md)
 - [Логирование](docs/logging.md)
