@@ -120,3 +120,4 @@ Endpoint проверяет работоспособность API. Подклю
 - [База данных, миграции, seed и переход существующей БД](docs/database.md)
 - [Конфигурация приложения](docs/configuration.md)
 - [Логирование](docs/logging.md)
+- [Описание API](docs/API.md)
