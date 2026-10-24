@@ -28,10 +28,36 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getResponse()
         : { message: 'Internal server error' };
 
-    const body =
+    const rawMessage =
       typeof exceptionResponse === 'string'
-        ? { message: exceptionResponse }
-        : exceptionResponse;
+        ? exceptionResponse
+        : 'message' in exceptionResponse
+          ? exceptionResponse.message
+          : undefined;
+    const message =
+      status >= 500
+        ? 'Internal server error'
+        : Array.isArray(rawMessage)
+          ? rawMessage
+              .filter((item): item is string => typeof item === 'string')
+              .join('; ')
+          : typeof rawMessage === 'string'
+            ? rawMessage
+            : 'Request failed';
+    const code =
+      status >= 500
+        ? 'INTERNAL_ERROR'
+        : ((
+            {
+              400: 'BAD_REQUEST',
+              401: 'UNAUTHORIZED',
+              403: 'FORBIDDEN',
+              404: 'NOT_FOUND',
+              409: 'CONFLICT',
+              422: 'VALIDATION_ERROR',
+              429: 'TOO_MANY_REQUESTS',
+            } as Record<number, string>
+          )[status] ?? 'HTTP_ERROR');
 
     if (status >= 500) {
       if (exception instanceof Error) {
@@ -40,21 +66,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
           exception.stack,
         );
       } else {
-        this.logger.error(
-          `${request.method} ${request.url} -> ${status}`,
-        );
+        this.logger.error(`${request.method} ${request.url} -> ${status}`);
       }
     } else {
-      this.logger.warn(
-        `${request.method} ${request.url} -> ${status}`,
-      );
+      this.logger.warn(`${request.method} ${request.url} -> ${status}`);
     }
 
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      ...body,
+      code,
+      message,
     });
   }
 }

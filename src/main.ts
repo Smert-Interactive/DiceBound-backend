@@ -4,13 +4,14 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module.js';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
+import { configureApp } from './configure-app.js';
+import { SESSION_COOKIE } from './modules/auth/session.service.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableShutdownHooks();
-  app.useGlobalFilters(new AllExceptionsFilter());
+  configureApp(app);
 
   const config = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
@@ -22,14 +23,14 @@ async function bootstrap() {
   if (environment === 'development') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('DiceBound API')
-      .setDescription(
-        'REST API for the DiceBound tabletop RPG platform',
-      )
+      .setDescription('REST API for the DiceBound tabletop RPG platform')
       .setVersion('0.1.0')
-      .addServer(
-        `http://localhost:${port}`,
-        'Local development',
+      .addCookieAuth(
+        SESSION_COOKIE,
+        { type: 'apiKey', in: 'cookie' },
+        SESSION_COOKIE,
       )
+      .addServer(`http://localhost:${port}`, 'Local development')
       .build();
 
     const documentFactory = () =>
@@ -42,6 +43,8 @@ async function bootstrap() {
 
   await app.listen(port);
 
-  logger.log(`DiceBound API started on port ${port} in ${environment} environment`);
+  logger.log(
+    `DiceBound API started on port ${port} in ${environment} environment`,
+  );
 }
 await bootstrap();
