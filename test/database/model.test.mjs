@@ -99,7 +99,7 @@ await test('MVP storage acceptance in a clean PostgreSQL schema', async (t) => {
   });
 
   await t.test(
-    'migrations build all six tables and JSONB columns without manual DDL',
+    'migrations build all seven tables and JSONB columns without manual DDL',
     async () => {
       await db.prisma('migrate', 'deploy');
       const { rows } =
@@ -124,7 +124,7 @@ await test('MVP storage acceptance in a clean PostgreSQL schema', async (t) => {
           await q(`SELECT count(*)::int AS n FROM information_schema.tables
       WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'`)
         ).rows[0].n,
-        7,
+        8,
       );
     },
   );
@@ -680,10 +680,11 @@ await test('MVP storage acceptance in a clean PostgreSQL schema', async (t) => {
   );
 });
 
-await test('Prisma baseline adopts existing tables without recreating data', async (t) => {
+await test('Prisma baseline adopts existing tables and upgrades sessions without recreating data', async (t) => {
   const db = await database();
   t.after(db.close);
-  for (const name of migrations)
+  const previousMigrations = migrations.filter((name) => name !== '005_auth_sessions');
+  for (const name of previousMigrations)
     await db.client.query(await migrationSql(name));
   const id = randomUUID();
   await db.client.query(
@@ -694,7 +695,7 @@ await test('Prisma baseline adopts existing tables without recreating data', asy
   const before = (
     await db.client.query('SELECT * FROM users WHERE id = $1', [id])
   ).rows;
-  for (const name of migrations)
+  for (const name of previousMigrations)
     await db.prisma('migrate', 'resolve', '--applied', name);
   await db.prisma('migrate', 'deploy');
   await db.prisma('migrate', 'status');

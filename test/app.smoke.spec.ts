@@ -12,6 +12,7 @@ import {
 
 import { AppModule } from '../src/app.module.js';
 import { PrismaService } from '../src/database/prisma.service.js';
+import { configureApp } from '../src/configure-app.js';
 
 describe('Backend smoke tests', () => {
   let app: INestApplication | undefined;
@@ -33,6 +34,7 @@ describe('Backend smoke tests', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
+    configureApp(app);
 
     await app.init();
   });

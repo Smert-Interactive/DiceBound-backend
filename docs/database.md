@@ -15,16 +15,18 @@ prisma/
     002_game_systems/migration.sql
     003_characters/migration.sql
     004_character_shares/migration.sql
+    005_auth_sessions/migration.sql
   seed.mjs
   seeds/builtin-systems.json
   manual-rollback/*.down.sql
 test/database/
   seed-contract.test.mjs
   model.test.mjs
+  auth.postgres.ts
 ```
 
-`schema.prisma` описывает шесть моделей: User, GameSystem, SheetSchema,
-Character, CharacterVersion и CharacterShare. Имена полей клиента — camelCase;
+`schema.prisma` описывает семь моделей: User, GameSystem, SheetSchema,
+Character, CharacterVersion, CharacterShare и AuthSession. Имена полей клиента — camelCase;
 `@map` / `@@map` сохраняют имена колонок и таблиц в snake_case.
 UUID создаёт PostgreSQL через `gen_random_uuid()`, даты хранятся как
 `timestamptz`, структуры листов и данные персонажей — как JSONB.
@@ -48,6 +50,7 @@ CHECK, а не переводятся в новые enum-типы.
 | `npm run db:seed` | Добавить или проверить встроенные системы и схемы |
 | `npm run test:seed` | Проверить seed-контракт без подключения к БД |
 | `npm run test:db` | Запустить интеграционные тесты в временных схемах указанной БД |
+| `npm run test:auth:db` | Проверить HTTP-авторизацию с реальными Prisma/PostgreSQL во временной схеме |
 | `npm run db:studio` | Открыть Prisma Studio |
 
 В Prisma 7 генерация клиента и seed выполняются явно. `migrate dev` требует
@@ -96,7 +99,7 @@ npm run db:migrate:status
    COMMIT;
    ```
 
-   Архив остаётся в той же БД. Его не нужно добавлять в шесть бизнес-моделей.
+   Архив остаётся в той же БД. Его не нужно добавлять в бизнес-модели.
    Схема `legacy_migrations` не должна быть включена в список схем Prisma.
    Не запускайте старый runner после переключения. Если таблицы старой истории
    нет, этот шаг не выполняется.
@@ -128,6 +131,10 @@ npm run db:migrate:status
 
    При уже заполненной БД seed проверит данные без обновления дат и содержимого.
    Его ошибка означает необходимость сверки, а не повод удалить старые данные.
+
+   Миграция `005_auth_sessions` добавляет таблицу сессий. Если в БД применены
+   только исходные 001–004, её нужно выполнить через `migrate deploy`, а не
+   помечать уже применённой через baseline. Существующие пользователи сохраняются.
 
 ## Seed
 
@@ -183,5 +190,12 @@ Prisma хранит их контрольные суммы. Коммитьте �
 soft delete и baseline с сохранением данных. Вызовы CLI направляются только
 на временную схему; при обычном завершении она удаляется.
 
-В этой доработке интеграционные тесты и серверный baseline не запускались:
-подключение к БД и создание отдельной БД не выполнялись.
+`npm run test:auth:db` использует временную схему `dicebound_auth_test_<uuid>`
+для реальных запросов register/login/logout/me. В ней проверяются миграции,
+уникальность email при параллельных запросах, сессии, внешние ключи,
+очистка и счётчики профиля. PostgreSQL-сервис и оба набора тестов добавлены в CI.
+
+При реализации авторизации оба PostgreSQL-набора успешно выполнены
+во временных схемах существующей БД, включая baseline 001–004 с последующим
+применением 005 и сохранением пользователя. Миграция и baseline рабочей схемы
+в рамках этой реализации не выполнялись.

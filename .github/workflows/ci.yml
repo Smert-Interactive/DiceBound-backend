@@ -22,6 +22,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: dicebound_test
+          POSTGRES_PASSWORD: dicebound_test
+          POSTGRES_DB: dicebound_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dicebound_test -d dicebound_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://dicebound_test:dicebound_test@127.0.0.1:5432/dicebound_test
+
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -78,3 +96,11 @@ jobs:
       - name: Build
         if: steps.project.outputs.ready == 'true'
         run: npm run build
+
+      - name: Test PostgreSQL migrations and storage
+        if: steps.project.outputs.ready == 'true'
+        run: npm run test:db
+
+      - name: Test authentication with PostgreSQL
+        if: steps.project.outputs.ready == 'true'
+        run: npm run test:auth:db
