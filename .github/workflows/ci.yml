@@ -109,6 +109,9 @@ jobs:
         if: steps.project.outputs.ready == 'true'
         run: npm run test:systems:db
 
+      - name: Test characters with PostgreSQL
+        if: steps.project.outputs.ready == 'true'
+        run: npm run test:characters:db
 
   publish:
     name: publish-backend-image

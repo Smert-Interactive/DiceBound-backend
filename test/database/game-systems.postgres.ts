@@ -1,14 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
-import type { Prisma } from '../../src/generated/prisma/client.js';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createPostgresApp } from '../helpers/postgres-app.js';
-import {
-  evaluateFormula,
-  parseFormula,
-} from '../../src/common/formulas/formula-parser.js';
-import { SheetSchemaValidator } from '../../src/modules/game-systems/validation/sheet-schema.validator.js';
 
 const origin = 'http://localhost:5173';
 const builtinId = '10000000-0000-4000-8000-000000000001';
@@ -310,63 +304,30 @@ describe('Game Systems read/import/archive with PostgreSQL', () => {
     const imported = await importSystem().expect(201);
     const systemId = imported.body.system.id;
     const sheetId = imported.body.sheet_schema.id;
-    const validated = new SheetSchemaValidator().validate(thirdSchema);
-    if (!validated.valid) throw new Error('Third-system fixture must validate');
-    const calculate = (input: Record<string, Prisma.InputJsonValue>) => {
-      const data = { ...input };
-      for (const section of validated.schema.sections) {
-        for (const field of section.fields) {
-          if (field.type === 'calculated')
-            data[field.id] = evaluateFormula(
-              parseFormula(field.formula).ast,
-              data,
-            );
-        }
-      }
-      return data;
-    };
-    const initial = calculate({
+    const input = {
       callsign: 'Orion',
       energy: 35,
       is_alive: true,
       role: 'pilot',
       shield: { current: 8, max: 10 },
-    });
-    expect(initial.energy_bonus).toBe(3);
-    // Characters HTTP #17 is not implemented yet; exercise its storage boundary directly.
-    const original = await db.prisma.$transaction(async (tx) => {
-      const character = await tx.character.create({
-        data: {
-          ownerId: users[0].id,
-          name: 'Orion',
-          gameSystemId: systemId,
-          sheetSchemaId: sheetId,
-          data: initial,
-        },
-      });
-      await tx.characterVersion.create({
-        data: {
-          characterId: character.id,
-          versionNumber: 1,
-          data: initial,
-        },
-      });
-      return character;
-    });
-    const updated = calculate({ ...initial, energy: 72 });
-    await db.prisma.$transaction([
-      db.prisma.character.update({
-        where: { id: original.id },
-        data: { data: updated },
-      }),
-      db.prisma.characterVersion.create({
-        data: {
-          characterId: original.id,
-          versionNumber: 2,
-          data: updated,
-        },
-      }),
-    ]);
+    };
+    const original = (
+      await post('/api/v1/characters', {
+        name: 'Orion',
+        game_system_id: systemId,
+        sheet_schema_id: sheetId,
+      }).expect(201)
+    ).body;
+    const saveCharacter = (data: object) =>
+      http()
+        .put(`/api/v1/characters/${original.id}`)
+        .set('Cookie', users[0].cookie)
+        .set('Origin', origin)
+        .send({ data });
+    const firstSave = await saveCharacter(input).expect(200);
+    expect(firstSave.body.data.energy_bonus).toBe(3);
+    const updated = (await saveCharacter({ ...input, energy: 72 }).expect(200))
+      .body.data;
     await db.prisma.characterShare.createMany({
       data: [
         { characterId: original.id, userId: users[1].id, permission: 'EDIT' },
@@ -428,24 +389,14 @@ describe('Game Systems read/import/archive with PostgreSQL', () => {
       (await db.prisma.character.findUniqueOrThrow({ where: { id: copy.id } }))
         .data,
     ).toEqual(updated);
-    const savedAfterArchive = calculate({ ...updated, energy: 91 });
-    await db.prisma.$transaction([
-      db.prisma.character.update({
-        where: { id: original.id },
-        data: { data: savedAfterArchive },
-      }),
-      db.prisma.characterVersion.create({
-        data: {
-          characterId: original.id,
-          versionNumber: 3,
-          data: savedAfterArchive,
-        },
-      }),
-    ]);
+    const savedAfterArchive = (
+      await saveCharacter({ ...input, energy: 91 }).expect(200)
+    ).body.data;
+    expect(savedAfterArchive.energy_bonus).toBe(9);
     expect(
       (
         await db.prisma.characterVersion.findFirstOrThrow({
-          where: { characterId: original.id, versionNumber: 3 },
+          where: { characterId: original.id, versionNumber: 4 },
         })
       ).data,
     ).toEqual(savedAfterArchive);
