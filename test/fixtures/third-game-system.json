@@ -1,0 +1,16 @@
+{
+  "sections": [
+    {
+      "id": "core",
+      "label": "Orbital Expedition",
+      "fields": [
+        { "id": "callsign", "type": "text", "label": "Callsign", "required": true, "maxLength": 80 },
+        { "id": "energy", "type": "number", "label": "Energy", "min": 0, "max": 100 },
+        { "id": "energy_bonus", "type": "calculated", "label": "Energy Bonus", "formula": "floor(energy / 10)" },
+        { "id": "is_alive", "type": "checkbox", "label": "Alive" },
+        { "id": "role", "type": "select", "label": "Role", "options": [{ "value": "pilot", "label": "Pilot" }, { "value": "engineer", "label": "Engineer" }] },
+        { "id": "shield", "type": "resource", "label": "Shield", "min": 0 }
+      ]
+    }
+  ]
+}

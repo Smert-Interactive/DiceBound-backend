@@ -4,7 +4,7 @@ import swc from 'unplugin-swc';
 export default defineConfig({
   plugins: [swc.vite()],
   test: {
-    include: ['test/database/auth.postgres.ts'],
+    include: ['test/database/*.postgres.ts'],
     env: {
       NODE_ENV: 'test',
       PORT: '3000',
