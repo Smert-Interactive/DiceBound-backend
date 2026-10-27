@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 
 import type { Request, Response } from 'express';
+import { ValidationException } from '../exceptions/validation.exception.js';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -78,6 +79,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       path: request.url,
       code,
       message,
+      ...(exception instanceof ValidationException
+        ? { details: exception.details }
+        : {}),
     });
   }
 }

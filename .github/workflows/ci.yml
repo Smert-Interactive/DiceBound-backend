@@ -105,6 +105,11 @@ jobs:
         if: steps.project.outputs.ready == 'true'
         run: npm run test:auth:db
 
+      - name: Test game systems with PostgreSQL
+        if: steps.project.outputs.ready == 'true'
+        run: npm run test:systems:db
+
+
   publish:
     name: publish-backend-image
     needs: quality
