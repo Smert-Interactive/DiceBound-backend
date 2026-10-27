@@ -63,6 +63,62 @@ describe('Sheet schema import validation', () => {
     });
   });
 
+  it('rejects an ambiguous field ID even when its formula parses as subtraction', () => {
+    const result = validate(
+      definition([
+        { ...number, id: 'a' },
+        { ...number, id: 'b' },
+        { ...number, id: 'a-b' },
+        calculated('result', 'a-b'),
+      ]),
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContainEqual({
+      path: 'sections[0].fields[2].id',
+      message: 'Field IDs must match [A-Za-z_][A-Za-z0-9_]*',
+      line: null,
+    });
+    expect(result.schema).toBeNull();
+  });
+
+  it.each(['a-b', 'a+b', 'a b', 'a.b', '1a', 'a/b', 'поле', 'a\nb'])(
+    'rejects a field ID outside the formula identifier grammar: %j',
+    (id) => {
+      const result = validate(definition([{ ...number, id }]));
+      expect(result.valid).toBe(false);
+      expect(result.errors[0].path).toBe('sections[0].fields[0].id');
+    },
+  );
+
+  it.each(['energy', '_energy', 'Energy2', 'energy_bonus', 'floor'])(
+    'accepts an unambiguous field ID and formula reference: %s',
+    (id) => {
+      expect(
+        validate(
+          definition([{ ...number, id }, calculated('result', `${id} + 1`)]),
+        ).valid,
+      ).toBe(true);
+    },
+  );
+
+  it('preserves subtraction formulas and hyphenated section IDs', () => {
+    expect(
+      validate({
+        sections: [
+          {
+            id: 'core-stats',
+            label: 'Core',
+            fields: [
+              { ...number, id: 'a' },
+              { ...number, id: 'b' },
+              calculated('result', 'a-b'),
+            ],
+          },
+        ],
+      }).valid,
+    ).toBe(true);
+  });
+
   it.each(['{', '', '{"sections": [\n  INVALID\n]}'])(
     'reports JSON syntax failure without throwing or exposing internals',
     (text) => {

@@ -18,6 +18,8 @@ const functions = new Set<string>(['floor', 'ceil', 'round', 'min', 'max']);
 const MAX_TOKENS = 512;
 const MAX_DEPTH = 64;
 export const MAX_FORMULA_LENGTH = 2048;
+export const FORMULA_IDENTIFIER_PATTERN = '[A-Za-z_][A-Za-z0-9_]*';
+const identifierPattern = new RegExp(`^${FORMULA_IDENTIFIER_PATTERN}`);
 
 type Token = {
   kind: 'number' | 'identifier' | 'symbol' | 'end';
@@ -37,7 +39,7 @@ function tokenize(text: string): Token[] {
       continue;
     }
     const number = /^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/.exec(rest);
-    const identifier = /^[A-Za-z_][A-Za-z0-9_]*/.exec(rest);
+    const identifier = identifierPattern.exec(rest);
     let token: Token;
     if (number) token = { kind: 'number', value: number[0] };
     else if (identifier) token = { kind: 'identifier', value: identifier[0] };

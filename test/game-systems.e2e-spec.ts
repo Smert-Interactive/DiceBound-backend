@@ -282,6 +282,57 @@ describe('Game Systems read API (HTTP contract)', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  it('rejects ambiguous field IDs in validation and import before writing to the database', async () => {
+    const schemaText = JSON.stringify({
+      sections: [
+        {
+          id: 'core',
+          label: 'Core',
+          fields: [
+            { id: 'a', type: 'number', label: 'A' },
+            { id: 'b', type: 'number', label: 'B' },
+            { id: 'a-b', type: 'number', label: 'Ambiguous ID' },
+            {
+              id: 'result',
+              type: 'calculated',
+              label: 'Result',
+              formula: 'a-b',
+            },
+          ],
+        },
+      ],
+    });
+    const checked = await http()
+      .post('/api/v1/systems/import/validate')
+      .set('Origin', origin)
+      .set('Cookie', cookie)
+      .send({ schema_text: schemaText })
+      .expect(200);
+    expect(checked.body).toMatchObject({
+      valid: false,
+      schema: null,
+      summary: null,
+    });
+    expect(checked.body.errors).toContainEqual({
+      path: 'sections[0].fields[2].id',
+      message: 'Field IDs must match [A-Za-z_][A-Za-z0-9_]*',
+      line: null,
+    });
+    const imported = await http()
+      .post('/api/v1/systems/import')
+      .set('Origin', origin)
+      .set('Cookie', cookie)
+      .send({
+        system_name: 'My RPG',
+        sheet_schema_name: 'Sheet',
+        schema_text: schemaText,
+      })
+      .expect(422);
+    expect(imported.body.code).toBe('VALIDATION_ERROR');
+    expect(imported.body.details).toEqual(checked.body.errors);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('import returns 201 with snake_case DTOs and sets owner/source on the server', async () => {
     const result = await http()
       .post('/api/v1/systems/import')

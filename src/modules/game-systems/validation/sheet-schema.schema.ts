@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { MAX_FORMULA_LENGTH } from '../../../common/formulas/formula-parser.js';
+import {
+  FORMULA_IDENTIFIER_PATTERN,
+  MAX_FORMULA_LENGTH,
+} from '../../../common/formulas/formula-parser.js';
 
 export const MAX_SCHEMA_BYTES = 64 * 1024;
 export const MAX_FIELDS = 1024;
@@ -21,7 +24,10 @@ const identifier = z
     'Reserved field identifier',
   );
 const base = {
-  id: identifier,
+  id: identifier.regex(
+    new RegExp(`^${FORMULA_IDENTIFIER_PATTERN}$`),
+    `Field IDs must match ${FORMULA_IDENTIFIER_PATTERN}`,
+  ),
   label: nonempty,
   required: z.boolean().optional(),
 };
