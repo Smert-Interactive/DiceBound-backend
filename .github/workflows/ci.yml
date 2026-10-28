@@ -113,6 +113,10 @@ jobs:
         if: steps.project.outputs.ready == 'true'
         run: npm run test:characters:db
 
+      - name: Test character history with PostgreSQL
+        if: steps.project.outputs.ready == 'true'
+        run: npm run test:history:db
+
   publish:
     name: publish-backend-image
     needs: quality

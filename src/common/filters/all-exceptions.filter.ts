@@ -48,17 +48,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const code =
       status >= 500
         ? 'INTERNAL_ERROR'
-        : ((
-            {
-              400: 'BAD_REQUEST',
-              401: 'UNAUTHORIZED',
-              403: 'FORBIDDEN',
-              404: 'NOT_FOUND',
-              409: 'CONFLICT',
-              422: 'VALIDATION_ERROR',
-              429: 'TOO_MANY_REQUESTS',
-            } as Record<number, string>
-          )[status] ?? 'HTTP_ERROR');
+        : typeof exceptionResponse === 'object' &&
+            'code' in exceptionResponse &&
+            typeof exceptionResponse.code === 'string' &&
+            exceptionResponse.code.length > 0
+          ? exceptionResponse.code
+          : ((
+              {
+                400: 'BAD_REQUEST',
+                401: 'UNAUTHORIZED',
+                403: 'FORBIDDEN',
+                404: 'NOT_FOUND',
+                409: 'CONFLICT',
+                422: 'VALIDATION_ERROR',
+                429: 'TOO_MANY_REQUESTS',
+              } as Record<number, string>
+            )[status] ?? 'HTTP_ERROR');
 
     if (status >= 500) {
       if (exception instanceof Error) {
