@@ -1,6 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { SheetSchemaValidator } from '../validation/sheet-schema.validator.js';
+import {
+  calculateFields,
+  CalculatedFieldError,
+} from '../../../common/formulas/calculate-fields.js';
+import { sheetSchema } from '../validation/sheet-schema.schema.js';
 
 const validator = new SheetSchemaValidator();
 const number = {
@@ -247,6 +252,87 @@ describe('Sheet schema import validation', () => {
     expect(
       validate(definition([number, calculated('a', '10 / energy')])).valid,
     ).toBe(true);
+  });
+
+  it('evaluates a cross-section diamond with repeated references regardless of field order', () => {
+    const result = validate({
+      sections: [
+        {
+          id: 'derived',
+          label: 'Derived',
+          fields: [
+            calculated('total', 'left + right + left'),
+            calculated('right', 'base * 2'),
+          ],
+        },
+        {
+          id: 'inputs',
+          label: 'Inputs',
+          fields: [calculated('left', 'base + 1'), { ...number, id: 'base' }],
+        },
+      ],
+    });
+    expect(result.valid).toBe(true);
+    if (!result.valid) throw new Error('Expected a valid schema');
+    expect(calculateFields(result.schema, { base: 3 })).toEqual({
+      base: 3,
+      left: 4,
+      right: 6,
+      total: 14,
+    });
+  });
+
+  it.each([
+    [calculated('a', 'missing + energy'), calculated('b', 'a + 1')],
+    [calculated('a', 'floor()'), calculated('b', 'a + 1')],
+    [calculated('a', 'b + 1'), calculated('b', 'a + 1')],
+  ])(
+    'uses the same graph errors during import and calculation (%#)',
+    (...fields) => {
+      const schema = sheetSchema.parse(definition(fields));
+      const result = validate(schema);
+      expect(result.valid).toBe(false);
+      try {
+        calculateFields(schema, {});
+        expect.fail('Expected a graph error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(CalculatedFieldError);
+        expect((error as CalculatedFieldError).fieldId).toBe('a');
+        expect((error as Error).message).toBe(result.errors[0].message);
+      }
+      if (fields[0].formula !== 'b + 1') {
+        expect(
+          result.errors.every((error) => !error.message.includes('cyclic')),
+        ).toBe(true);
+      }
+    },
+  );
+
+  it('preserves all independent formula errors and their source paths', () => {
+    const result = validate(
+      definition([
+        calculated('a', 'unknown + other'),
+        calculated('b', 'eval(1)'),
+        calculated('c', 'a + 1'),
+      ]),
+    );
+    expect(result.errors).toEqual([
+      {
+        path: 'sections[0].fields[0].formula',
+        message: "Unknown field 'unknown'",
+        line: null,
+      },
+      {
+        path: 'sections[0].fields[0].formula',
+        message: "Unknown field 'other'",
+        line: null,
+      },
+      {
+        path: 'sections[0].fields[1].formula',
+        message: "Unsupported function 'eval'",
+        line: null,
+      },
+    ]);
   });
 
   it('rejects nonfinite JSON numbers and overly large UTF-8 text', () => {

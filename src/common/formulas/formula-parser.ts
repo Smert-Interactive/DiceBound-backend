@@ -1,4 +1,4 @@
-/** A small arithmetic grammar shared with the future Formula Engine. No JavaScript execution. */
+/** The Formula Engine's restricted arithmetic grammar. No JavaScript execution. */
 export type FormulaFunction = 'floor' | 'ceil' | 'round' | 'min' | 'max';
 export type FormulaNode =
   | { kind: 'number'; value: number }
