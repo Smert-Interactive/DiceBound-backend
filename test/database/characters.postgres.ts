@@ -162,6 +162,81 @@ describe('Characters with PostgreSQL', () => {
       saved.body.data,
     );
   });
+  it('recalculates cross-section formulas with all five functions in an imported system', async () => {
+    const schema: SheetDefinition = {
+      sections: [
+        {
+          id: 'derived',
+          label: 'Derived',
+          fields: [
+            {
+              id: 'attack_bonus',
+              type: 'calculated',
+              label: 'Attack',
+              formula: 'strength_modifier + 2',
+            },
+            {
+              id: 'combined',
+              type: 'calculated',
+              label: 'Combined',
+              formula:
+                'min(max(attack_bonus, ceil(strength / 3)), round(strength / 2))',
+            },
+            {
+              id: 'constant',
+              type: 'calculated',
+              label: 'Constant',
+              formula: 'max(1, 3, 2)',
+            },
+          ],
+        },
+        {
+          id: 'abilities',
+          label: 'Abilities',
+          fields: [
+            {
+              id: 'strength_modifier',
+              type: 'calculated',
+              label: 'Modifier',
+              formula: 'floor((strength - 10) / 2)',
+            },
+            { id: 'strength', type: 'number', label: 'Strength' },
+          ],
+        },
+      ],
+    };
+    const imported = await importSchema(schema).expect(201);
+    const created = await create({
+      game_system_id: imported.body.system.id,
+      sheet_schema_id: imported.body.sheet_schema.id,
+    }).expect(201);
+    expect(created.body.data).toEqual({ constant: 3 });
+    for (const [strength, modifier, attack, combined] of [
+      [16, 3, 5, 6],
+      [9, -1, 1, 3],
+    ]) {
+      const saved = await save(created.body.id, { strength }).expect(200);
+      expect(saved.body.data).toEqual({
+        strength,
+        strength_modifier: modifier,
+        attack_bonus: attack,
+        combined,
+        constant: 3,
+      });
+      const persisted = await state(created.body.id);
+      expect(persisted.character?.data).toEqual(saved.body.data);
+      expect(persisted.versions.at(-1)?.data).toEqual(saved.body.data);
+    }
+    const persisted = await state(created.body.id);
+    expect(persisted.versions.map((version) => version.versionNumber)).toEqual([
+      1, 2, 3,
+    ]);
+    expect(persisted.versions[0].data).toEqual({ constant: 3 });
+    expect(persisted.versions[1].data).toMatchObject({
+      strength: 16,
+      strength_modifier: 3,
+    });
+  });
   it('rejects foreign, mismatched, missing and archived schemas without creating anything', async () => {
     await create({}, 1).expect(404);
     await create({ sheet_schema_id: builtinSheetId }).expect(404);
@@ -256,6 +331,55 @@ describe('Characters with PostgreSQL', () => {
       expect(await state(created.body.id)).toEqual(before);
     }
   });
+  it.each([
+    ['strength +', 'Expected a number, field or function in formula'],
+    ['unknown + 1', "Unknown field 'unknown'"],
+    ['eval(1)', "Unsupported function 'eval'"],
+    ['final_score + 1', 'Calculated field has a cyclic dependency'],
+  ])(
+    'rejects an invalid persisted formula atomically: %s',
+    async (formula, message) => {
+      const schema = structuredClone(characterDefinition);
+      const field = schema.sections[0].fields.find(
+        (field) => field.id === 'final_score',
+      );
+      if (field?.type !== 'calculated')
+        throw new Error('Expected a calculated field');
+      field.formula = formula;
+      // Simulate invalid legacy data directly in this test's isolated PostgreSQL schema.
+      const legacySheet = await db.prisma.sheetSchema.create({
+        data: { gameSystemId: systemId, name: 'Legacy sheet', schema },
+      });
+      const data = {
+        ...validCharacterData,
+        constant: 2,
+        strength_modifier: 3,
+        final_score: 5,
+      };
+      const character = await db.prisma.character.create({
+        data: {
+          ownerId: users[0].id,
+          gameSystemId: systemId,
+          sheetSchemaId: legacySheet.id,
+          name: 'Legacy character',
+          data,
+          versions: { create: { versionNumber: 1, data } },
+        },
+      });
+      const before = await state(character.id);
+      const response = await save(character.id, {
+        ...validCharacterData,
+        strength: 9,
+      }).expect(422);
+      expect(response.body.details).toEqual([
+        { field: 'data.final_score', message },
+      ]);
+      expect(await state(character.id)).toEqual(before);
+      await create({ sheet_schema_id: legacySheet.id }).expect(422);
+      expect(await db.prisma.character.count()).toBe(1);
+      expect(await db.prisma.characterVersion.count()).toBe(1);
+    },
+  );
   it('rolls back Character.data and updated_at when snapshot insertion fails in PostgreSQL', async () => {
     const created = await create().expect(201);
     const before = await state(created.body.id);

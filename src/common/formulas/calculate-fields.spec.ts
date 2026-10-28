@@ -38,6 +38,29 @@ describe('calculateFields', () => {
       CalculatedFieldError,
     );
   });
+  it('discards stale calculated values before skipping missing draft dependencies', () => {
+    const input = { strength_modifier: 999, final_score: 999, constant: 999 };
+    expect(
+      calculateFields(characterDefinition, input, { allowMissing: true }),
+    ).toEqual({ constant: 2 });
+    expect(input).toEqual({
+      strength_modifier: 999,
+      final_score: 999,
+      constant: 999,
+    });
+  });
+  it.each([0, '1', null, undefined, Infinity, NaN])(
+    'does not skip present invalid values or zero divisors in draft mode (%s)',
+    (x) => {
+      expect(() =>
+        calculateFields(
+          schemaWith([numeric, formula('a', '10 / x')]),
+          { x },
+          { allowMissing: true },
+        ),
+      ).toThrow(CalculatedFieldError);
+    },
+  );
   it.each([
     [
       schemaWith([numeric, formula('a', '10 / x')]),

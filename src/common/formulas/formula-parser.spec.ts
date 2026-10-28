@@ -8,6 +8,7 @@ import {
 describe('Safe arithmetic formula grammar', () => {
   it.each([
     ['floor((strength - 10) / 2)', { strength: 16 }, 3],
+    ['floor((strength - 10) / 2)', { strength: 9 }, -1],
     ['1 + 2 * 3', {}, 7],
     ['(1 + 2) * 3', {}, 9],
     ['10 - 3 - 2', {}, 5],
@@ -17,6 +18,8 @@ describe('Safe arithmetic formula grammar', () => {
     ['.5 + 1e2 + 2E-1', {}, 100.7],
     [' max( -1, -2 ) ', {}, -1],
     ['min + floor(2.8)', { min: 1 }, 3],
+    ['max(1, 3, 2)', {}, 3],
+    ['min(max(energy, 2), ceil(3.1)) + round(-1.5)', { energy: 5 }, 3],
   ] as const)(
     'evaluates %s with arithmetic precedence',
     (formula, values, expected) => {
@@ -33,6 +36,17 @@ describe('Safe arithmetic formula grammar', () => {
   });
 
   it.each([
+    ['round(1.5)', 2],
+    ['round(-1.5)', -1],
+    ['round(-0.5)', -0],
+    ['round(0.5)', 1],
+    ['floor(-1.5)', -2],
+    ['ceil(-1.5)', -1],
+  ] as const)('uses Math rounding semantics for %s', (formula, expected) => {
+    expect(evaluateFormula(parseFormula(formula).ast, {})).toBe(expected);
+  });
+
+  it.each([
     '',
     ' ',
     '1 +',
@@ -45,8 +59,10 @@ describe('Safe arithmetic formula grammar', () => {
     'max()',
     'min(1,)',
     'sin(1)',
+    'eval(1)',
     'Math.floor(1)',
     'energy.current',
+    'energy.max',
     'data[0]',
     '1 ** 2',
     '1 % 2',
